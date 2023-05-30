@@ -348,6 +348,8 @@ export async function mutateModules (
       opts.fixLockfile ||
       !ctx.wantedLockfile.lockfileVersion.toString().startsWith('6.') ||
       opts.forceFullResolution
+    console.log('needsFullResolution', needsFullResolution)
+
     if (needsFullResolution) {
       ctx.wantedLockfile.settings = {
         autoInstallPeers: opts.autoInstallPeers,
@@ -662,7 +664,7 @@ Note that in CI environments, this setting is enabled by default.`,
         wantedDependencies: wantedDeps.map(wantedDep => ({ ...wantedDep, isNew: !currentPrefs[wantedDep.alias], updateSpec: true, nodeExecPath: opts.nodeExecPath })),
       })
     }
-
+    console.log('installInContext', projectsToInstall.map(i=>i.id));
     // Unfortunately, the private lockfile may differ from the public one.
     // A user might run named installations on a project that has a pnpm-lock.yaml file before running a noop install
     const makePartialCurrentLockfile = !installsOnly && (

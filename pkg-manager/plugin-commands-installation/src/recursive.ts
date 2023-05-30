@@ -166,8 +166,10 @@ export async function recursive (
   if (opts.lockfileDir && ['add', 'install', 'remove', 'update', 'import'].includes(cmdFullName)) {
     let importers = getImporters(opts)
     const calculatedRepositoryRoot = await fs.realpath(calculateRepositoryRoot(opts.workspaceDir, importers.map(x => x.rootDir)))
+    console.debug('calculatedRepositoryRoot', calculatedRepositoryRoot);
     const isFromWorkspace = isSubdir.bind(null, calculatedRepositoryRoot)
     importers = await pFilter(importers, async ({ rootDir }: { rootDir: string }) => isFromWorkspace(await fs.realpath(rootDir)))
+    console.debug('importers', importers)
     if (importers.length === 0) return true
     let mutation!: string
     switch (cmdFullName) {
@@ -185,9 +187,11 @@ export async function recursive (
     const mutatedImporters = [] as MutatedProject[]
     await Promise.all(importers.map(async ({ rootDir }) => {
       const localConfig = await memReadLocalConfig(rootDir)
+      console.dirxml("localConfig", localConfig)
       const modulesDir = localConfig.modulesDir ?? opts.modulesDir
       const { manifest, writeProjectManifest } = manifestsByPath[rootDir]
       let currentInput = [...params]
+      console.dirxml("currentInput", currentInput)
       if (updateMatch != null) {
         currentInput = matchDependencies(updateMatch, manifest, includeDirect)
         if ((currentInput.length === 0) && (typeof opts.depth === 'undefined' || opts.depth <= 0)) {
@@ -195,6 +199,7 @@ export async function recursive (
           return
         }
       }
+      console.dirxml('updateToLatest',updateToLatest)
       if (updateToLatest) {
         if (!params || (params.length === 0)) {
           currentInput = updateToLatestSpecsFromManifest(manifest, includeDirect)
@@ -206,6 +211,8 @@ export async function recursive (
           }
         }
       }
+
+      console.dirxml("opts.workspace", opts.workspace, "currentInput", currentInput)
       if (opts.workspace) {
         if (!currentInput || (currentInput.length === 0)) {
           currentInput = updateToWorkspacePackagesFromManifest(manifest, includeDirect, workspacePackages)
@@ -243,6 +250,15 @@ export async function recursive (
         } as MutatedProject)
         return
       case 'install':
+        console.debug({
+          modulesDir,
+          mutation,
+          pruneDirectDependencies: opts.pruneDirectDependencies,
+          rootDir,
+          update: opts.update,
+          updateMatching: opts.updateMatching,
+          updatePackageManifest: opts.updatePackageManifest,
+        })
         mutatedImporters.push({
           modulesDir,
           mutation,
@@ -277,10 +293,12 @@ export async function recursive (
       throw new PnpmError('NO_PACKAGE_IN_DEPENDENCIES',
         'None of the specified packages were found in the dependencies of any of the projects.')
     }
-    const { updatedProjects: mutatedPkgs } = await mutateModules(mutatedImporters, {
+    const { updatedProjects: mutatedPkgs,stats } = await mutateModules(mutatedImporters, {
       ...installOpts,
       storeController: store.ctrl,
     })
+    console.debug('(mutatedPkgs).rootDir', mutatedPkgs.map(i=> i.rootDir))
+    console.debug('stats', stats)
     if (opts.save !== false) {
       await Promise.all(
         mutatedPkgs
@@ -295,10 +313,12 @@ export async function recursive (
   const limitInstallation = pLimit(opts.workspaceConcurrency ?? 4)
   await Promise.all(pkgPaths.map(async (rootDir: string) =>
     limitInstallation(async () => {
+      console.debug('opts.ignorePnpmfile', opts.ignorePnpmfile)
       const hooks = opts.ignorePnpmfile
         ? {}
         : (() => {
           const pnpmfileHooks = requireHooks(rootDir, opts)
+          console.debug('pnpmfileHooks', pnpmfileHooks);
           return {
             ...opts.hooks,
             ...pnpmfileHooks,

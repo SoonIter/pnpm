@@ -147,7 +147,10 @@ when running add/update with the --workspace option')
   const allProjects = opts.allProjects ?? (
     opts.workspaceDir ? await findWorkspacePackages(opts.workspaceDir, opts) : []
   )
+  console.debug('allProjects', allProjects.map(i=>i.manifest.name))
+  console.debug("opts.workspaceDir", opts.workspaceDir)
   if (opts.workspaceDir) {
+    console.debug('由于 opts.workspaceDir 这是一个 monorepo, 所以即将要走 recursive');
     const selectedProjectsGraph = opts.selectedProjectsGraph ?? selectProjectByDir(allProjects, opts.dir)
     if (selectedProjectsGraph != null) {
       const sequencedGraph = sequenceGraph(selectedProjectsGraph)
@@ -163,6 +166,8 @@ when running add/update with the --workspace option')
       }
 
       let allProjectsGraph!: ProjectsGraph
+
+      console.debug("opts.dedupePeerDependents", opts.dedupePeerDependents)
       if (opts.dedupePeerDependents) {
         allProjectsGraph = opts.allProjectsGraph ?? createPkgGraph(allProjects, {
           linkWorkspacePackages: Boolean(opts.linkWorkspacePackages),
@@ -176,6 +181,8 @@ when running add/update with the --workspace option')
           }
         }
       }
+      console.debug('allProjectsGraph',Object.keys(allProjectsGraph))
+      console.debug('selectedProjectsGraph',Object.keys(selectedProjectsGraph))
       await recursive(allProjects,
         params,
         {
@@ -196,7 +203,7 @@ when running add/update with the --workspace option')
 
   const dir = opts.dir || process.cwd()
   let workspacePackages!: WorkspacePackages
-
+  console.debug('installDeps', opts, "dir", dir);
   if (opts.workspaceDir) {
     workspacePackages = arrayOfWorkspacePackagesToMap(allProjects) as WorkspacePackages
   }

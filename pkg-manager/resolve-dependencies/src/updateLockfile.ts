@@ -52,8 +52,10 @@ export function updateLockfile (
   const warn = (message: string) => {
     logger.warn({ message, prefix })
   }
+  const newLockfile = pruneSharedLockfile(lockfile, { warn });
+  console.log(newLockfile)
   return {
-    newLockfile: pruneSharedLockfile(lockfile, { warn }),
+    newLockfile,
     pendingRequiresBuilds,
   }
 }

@@ -5,6 +5,21 @@ process.setMaxListeners(0)
 
 const argv = process.argv.slice(2)
 
+const originDebug = console.debug
+
+console.debug = (...args) => {
+  originDebug('<  trace  >      ',...args)
+}
+let s = new Set();
+console.dirxml = (key, ...args) => {
+  if (s.has(key)) {
+    return;
+  } else {
+    s.add(key)
+    console.debug('<once>', key, ...args);
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 ; (async () => {
   switch (argv[0]) {

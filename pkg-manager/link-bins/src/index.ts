@@ -42,6 +42,7 @@ export async function linkBins (
   }
 ): Promise<string[]> {
   const allDeps = await readModulesDir(modulesDir)
+  // console.log(modulesDir, allDeps)
   // If the modules dir does not exist, do nothing
   if (allDeps === null) return []
   const pkgBinOpts = {
@@ -51,6 +52,7 @@ export async function linkBins (
   const directDependencies = opts.projectManifest == null
     ? undefined
     : new Set(Object.keys(getAllDependenciesFromManifest(opts.projectManifest)))
+    console.log(directDependencies)
   const allCmds = unnest(
     (await Promise.all(
       allDeps
@@ -63,6 +65,7 @@ export async function linkBins (
         .map(async ({ depDir, isDirectDependency, nodeExecPath }) => {
           const target = normalizePath(depDir)
           const cmds = await getPackageBins(pkgBinOpts, target, nodeExecPath)
+          // cmds
           return cmds.map((cmd) => ({ ...cmd, isDirectDependency }))
         })
     ))
